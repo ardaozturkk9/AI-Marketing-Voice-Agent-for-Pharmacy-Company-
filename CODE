@@ -1,0 +1,102 @@
+{
+  "name": "call center",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "start-calls-json",
+        "options": {}
+      },
+      "id": "e7f073f5-f926-4dad-9add-8f4763cf0e1a",
+      "name": "Webhook (Start Calls)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        848,
+        288
+      ],
+      "webhookId": "e044b099-851a-49e3-ab7d-12804d2aeba6",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "functionCode": "// phoneNumbers alanını güvenle al\nconst raw = $json.body?.phoneNumbers || $json.phoneNumbers || '';\n\n// Rakamları temizle (boşluk, satır sonu fark etmez)\nconst digits = raw.replace(/\\D/g, '');\n\n// 10 haneli gruplara böl\nconst numbers = [];\nfor (let i = 0; i < digits.length; i += 10) {\n  const chunk = digits.slice(i, i + 10);\n  if (chunk.length === 10) {\n    numbers.push({ phone: chunk });\n  }\n}\n\n// n8n formatında döndür\nif (numbers.length === 0) {\n  return [{ json: { error: 'No valid numbers found', rawInput: raw } }];\n}\n\nreturn numbers.map(n => ({ json: n }));\n"
+      },
+      "id": "ba101fd7-3edb-4bb3-95ba-ceceea9fb987",
+      "name": "Split Numbers",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        288
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vapi.ai/call/phone",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer be813ff8-c889-4ab7-850d-12f1f82921d7"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"assistantId\": \"a6d0a920-0e16-4664-aec7-0cdd406d9a2c\",\n  \"customer\": {\n    \"number\": \"+90{{ $json.phone }}\",\n    \"numberE164CheckEnabled\": false\n  },\n  \"phoneNumberId\": \"f6a20dd2-6646-495f-8a8b-e5270b46b64a\"\n}\n",
+        "options": {}
+      },
+      "id": "adccc6dd-4867-4911-b69f-d2680dfc706e",
+      "name": "HTTP Request (Start Call)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1296,
+        288
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (Start Calls)": {
+      "main": [
+        [
+          {
+            "node": "Split Numbers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Numbers": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request (Start Call)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c55548d7-bca9-4215-8de3-e6949fdda319",
+  "meta": {
+    "instanceId": "ef1dc0d0b8700248f6042b57c77ac49c61b99264378345faece8d7810e91b2ff"
+  },
+  "id": "IPb1gyBfym5aiT8o",
+  "tags": []
+}
